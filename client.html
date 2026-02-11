@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Parcel • Enterprise Logistics</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f0f4f8;padding:16px;}
+.container{max-width:800px;margin:auto;background:white;padding:20px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+h2{text-align:center;color:#0f766e;margin-bottom:20px;}
+input{width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:10px;}
+button{padding:10px;background:#0f766e;color:white;border:none;border-radius:8px;cursor:pointer;width:100%;}
+button:hover{background:#0c5f59;}
+#result{margin-top:20px;}
+.product-image{max-width:120px;border-radius:8px;}
+#map{height:250px;border-radius:8px;margin-top:10px;}
+.countdown{font-weight:bold;color:#3b82f6;margin-top:10px;font-size:1.1rem;}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Track Your Parcel</h2>
+<input id="trackCode" placeholder="Enter tracking code">
+<button onclick="trackParcel()">Track</button>
+<div id="result"></div>
+</div>
+
+<script>
+function trackParcel(){
+  const code = document.getElementById("trackCode").value.trim();
+  const result = document.getElementById("result");
+  const parcels = JSON.parse(localStorage.getItem("enterprise_parcels"))||[];
+  const parcel = parcels.find(p=>p.id===code);
+  if(!parcel){result.innerHTML="<p>Tracking code not found.</p>";return;}
+  
+  result.innerHTML=`
+    <div><strong>Product:</strong> ${parcel.product}</div>
+    <div><strong>From:</strong> ${parcel.sender} <strong>To:</strong> ${parcel.receiver}</div>
+    <div><strong>Address:</strong> ${parcel.address}, ${parcel.city}, ${parcel.country}</div>
+    <div><strong>Delivery Fee:</strong> $${parcel.charges}</div>
+    <div><strong>Delivery Date:</strong> ${new Date(parcel.deliveryTime).toLocaleString()}</div>
+    <img src="${parcel.imgData}" class="product-image">
+    <div id="map"></div>
+    <div class="countdown" id="countdown"></div>
+  `;
+
+  // Map display
+  const map = L.map('map').setView([parcel.coords.lat, parcel.coords.lng], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(map);
+  L.marker([parcel.coords.lat, parcel.coords.lng]).addTo(map);
+
+  // Countdown
+  const countdownEl = document.getElementById("countdown");
+  const deliveryDate = new Date(parcel.deliveryTime);
+  function updateCountdown(){
+    const now = new Date();
+    const diff = deliveryDate - now;
+    if(diff<=0){countdownEl.innerHTML="🚚 Delivered!";clearInterval(timer);}
+    else{
+      const days=Math.floor(diff/1000/60/60/24);
+      const hours=Math.floor((diff/1000/60/60)%24);
+      const mins=Math.floor((diff/1000/60)%60);
+      const secs=Math.floor((diff/1000)%60);
+      countdownEl.innerHTML=`Estimated Arrival: ${days}d ${hours}h ${mins}m ${secs}s`;
+    }
+  }
+  updateCountdown();
+  const timer=setInterval(updateCountdown,1000);
+}
+</script>
+</body>
+</html>
