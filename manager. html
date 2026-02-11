@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin • GlobalTrackX Enterprise Logistics</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f0f4f8;padding:16px;}
+.container{max-width:1000px;margin:auto;background:white;padding:20px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+h2{text-align:center;color:#0f766e;margin-bottom:20px;}
+.form-group{margin-bottom:12px;}
+label{display:block;margin-bottom:4px;font-weight:bold;}
+input, select {width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;}
+button{padding:10px;background:#0f766e;color:white;border:none;border-radius:8px;cursor:pointer;margin-top:8px;}
+button:hover{background:#0c5f59;}
+.parcel-card{border:1px solid #cbd5e1;border-radius:8px;padding:12px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;}
+.parcel-card div{flex:1;}
+.parcel-card img{max-width:80px;max-height:60px;display:block;margin-top:6px;}
+.btn-small{padding:4px 8px;margin:2px;border-radius:6px;cursor:pointer;border:none;color:white;}
+.btn-edit{background:#f59e0b;}
+.btn-delete{background:#ef4444;}
+.btn-print{background:#0f766e;}
+#parcelList{margin-top:20px;}
+#map{height:250px;border-radius:8px;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2> Admin • Enterprise Logistics</h2>
+
+<div class="form-group"><label>Sender Name</label><input id="sender" placeholder="John Doe"></div>
+<div class="form-group"><label>Receiver Name</label><input id="receiver" placeholder="Jane Doe"></div>
+
+<div class="form-group">
+<label>Country</label>
+<select id="country" onchange="updateCities()">
+<option value="">Select Country</option>
+<option value="USA">USA</option>
+<option value="UK">UK</option>
+<option value="France">France</option>
+<option value="Germany">Germany</option>
+<option value="Nigeria">Nigeria</option>
+<option value="India">India</option>
+<option value="Japan">Japan</option>
+<option value="Canada">Canada</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>City</label>
+<select id="city"><option>Select Country First</option></select>
+</div>
+
+<div class="form-group"><label>Address</label><input id="address" placeholder="Street, Area, Zip"></div>
+<div class="form-group"><label>Product Name</label><input id="product" placeholder="Ring, Phone, Document"></div>
+<div class="form-group"><label>Charges (<span id="currencySymbol">$</span>)</label><input type="number" id="charges" placeholder="100"></div>
+<div class="form-group"><label>Estimated Delivery Date & Time</label><input type="datetime-local" id="deliveryTime"></div>
+<div class="form-group"><label>Upload Product Image</label><input type="file" id="productImage" accept="image/*"></div>
+
+<div id="map"></div>
+
+<button onclick="createParcel()">Add Parcel</button>
+
+<div id="parcelList"></div>
+</div>
+
+<script>
+// LocalStorage parcels
+let parcels = JSON.parse(localStorage.getItem("enterprise_parcels")) || [];
+
+// Leaflet Map
+let map = L.map('map').setView([20,0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19, attribution:'© OpenStreetMap'
+}).addTo(map);
+let marker;
+
+map.on('click', function(e){
+  if(marker) map.removeLayer(marker);
+  marker = L.marker(e.latlng).addTo(map);
+});
+
+// Country  City
+const citiesByCountry = {
+  "USA":["New York","Los Angeles","Chicago"],
+  "UK":["London","Manchester","Liverpool"],
+  "France":["Paris","Lyon","Marseille"],
+  "Germany":["Berlin","Munich","Hamburg"],
+  "Nigeria":["Lagos","Abuja","Port Harcourt"],
+  "India":["Mumbai","Delhi","Bangalore"],
+  "Japan":["Tokyo","Osaka","Kyoto"],
+  "Canada":["Toronto","Vancouver","Montreal"]
+};
+
+function updateCities(){
+  let country = document.getElementById("country").value;
+  let citySelect = document.getElementById("city");
+  citySelect.innerHTML = "";
+  if(citiesByCountry[country]){
+    citiesByCountry[country].forEach(c=>{
+      let opt = document.createElement("option"); opt.value=c; opt.text=c;
+      citySelect.add(opt);
+    });
+  }
+}
+
+// Generate tracking code
+function generateCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for(let i=0;i<12;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+
+// Create parcel
+function createParcel(){
+  const sender=document.getElementById("sender").value.trim();
+  const receiver=document.getElementById("receiver").value.trim();
+  const country=document.getElementById("country").value;
+  const city=document.getElementById("city").value;
+  const address=document.getElementById("address").value.trim();
+  const product=document.getElementById("product").value.trim();
+  const charges=document.getElementById("charges").value;
+  const deliveryTime=document.getElementById("deliveryTime").value;
+  const imageFile=document.getElementById("productImage").files[0];
+
+  if(!sender||!receiver||!country||!city||!address||!product||!charges||!deliveryTime){
+    alert("Fill all fields!");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const imageData = e.target.result;
+
+    const parcel = {
+      code: generateCode(),
+      sender, receiver, country, city, address, product,
+      charges, deliveryTime, status:"Pending",
+      created:new Date().toLocaleString(),
+      lat: marker ? marker.getLatLng().lat : null,
+      lng: marker ? marker.getLatLng().lng : null,
+      image:imageData,
+      audit:[`Parcel created at ${new Date().toLocaleString()}`]
+    };
+    parcels.push(parcel);
+    localStorage.setItem("enterprise_parcels", JSON.stringify(parcels));
+    displayParcels();
+    alert("Parcel added with tracking code: "+parcel.code);
+  }
+  if(imageFile) reader.readAsDataURL(imageFile);
+  else reader.onload({target:{result:null}});
+}
+
+// Display parcels
+function displayParcels(){
+  const container = document.getElementById("parcelList");
+  container.innerHTML = "";
+  parcels.forEach((p,i)=>{
+    const div = document.createElement("div");
+    div.className="parcel-card";
+    div.innerHTML=`
+      <div>
+        <strong>${p.product}</strong><br>
+        ${p.sender}  ${p.receiver}<br>
+        ${p.country}, ${p.city}<br>
+        <strong>Tracking:</strong> ${p.code}<br>
+        <strong>Delivery:</strong> ${new Date(p.deliveryTime).toLocaleString()}<br>
+        <strong>Status:</strong> ${p.status}<br>
+        Charges: $${p.charges}<br>
+        ${p.image?`<img src="${p.image}">`:''}
+      </div>
+      <div>
+        <button class="btn-small btn-edit" onclick="editParcel(${i})">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteParcel(${i})">Delete</button>
+        <button class="btn-small btn-print" onclick="printParcel(${i})">Print PDF</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// Delete
+function deleteParcel(index){
+  if(confirm("Delete this parcel?")){
+    parcels.splice(index,1);
+    localStorage.setItem("enterprise_parcels", JSON.stringify(parcels));
+    displayParcels();
+  }
+}
+
+// Edit (simplified: mark delivered)
+function editParcel(index){
+  let p = parcels[index];
+  if(p.status==="Pending") p.status="In Transit";
+  else if(p.status==="In Transit") p.status="Delivered";
+  p.audit.push(`Status updated to ${p.status} at ${new Date().toLocaleString()}`);
+  localStorage.setItem("enterprise_parcels", JSON.stringify(parcels));
+  displayParcels();
+}
+
+// Print PDF
+function printParcel(index){
+  const { jsPDF } = window.jspdf;
+  let p=parcels[index];
+  const doc = new jsPDF();
+  doc.setFontSize(16); doc.text("Parcel Receipt",20,20);
+  doc.setFontSize(12);
+  doc.text(`Tracking Code: ${p.code}`,20,30);
+  doc.text(`Product: ${p.product}`,20,40);
+  doc.text(`Sender: ${p.sender}`,20,50);
+  doc.text(`Receiver: ${p.receiver}`,20,60);
+  doc.text(`Country: ${p.country}`,20,70);
+  doc.text(`City: ${p.city}`,20,80);
+  doc.text(`Address: ${p.address}`,20,90);
+  doc.text(`Delivery Date: ${new Date(p.deliveryTime).toLocaleString()}`,20,100);
+  doc.text(`Charges: $${p.charges}`,20,110);
+  if(p.image) doc.addImage(p.image,'JPEG',140,20,50,50);
+  doc.save(`Parcel_${p.code}.pdf`);
+}
+
+displayParcels();
+</script>
+</body>
+</html>
