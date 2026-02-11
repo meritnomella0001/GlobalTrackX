@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Track Parcel • Client Dashboard</title>
+  <title>Track Parcel â€¢ Client Dashboard</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -233,7 +233,7 @@
 <div class="container">
   <header>
     <h1> Track Your Parcel</h1>
-    <p class="subtitle">Real-time updates • Secure & Reliable Delivery</p>
+    <p class="subtitle">Real-time updates â€¢ Secure & Reliable Delivery</p>
   </header>
 
   <section class="input-section">
@@ -256,7 +256,7 @@ const map = L.map('map', {
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  attribution: 'Â© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
 let currentMarker = null;
@@ -334,12 +334,12 @@ function trackParcel() {
       <h2 style="margin-bottom:1rem;color:var(--primary);">Parcel #${code}</h2>
 
       <div class="info-grid">
-        <div class="info-item"><strong>Product</strong> ${parcel.product || '—'}</div>
-        <div class="info-item"><strong>Sender</strong> ${parcel.sender || '—'}</div>
-        <div class="info-item"><strong>Receiver</strong> ${parcel.receiver || '—'}</div>
-        <div class="info-item"><strong>Destination</strong> ${parcel.city || '—'}, ${parcel.country || '—'}</div>
-        <div class="info-item"><strong>Address</strong> ${parcel.address || '—'}</div>
-        <div class="info-item"><strong>Delivery Fee</strong> $${parcel.charges || '—'}</div>
+        <div class="info-item"><strong>Product</strong> ${parcel.product || 'â€”'}</div>
+        <div class="info-item"><strong>Sender</strong> ${parcel.sender || 'â€”'}</div>
+        <div class="info-item"><strong>Receiver</strong> ${parcel.receiver || 'â€”'}</div>
+        <div class="info-item"><strong>Destination</strong> ${parcel.city || 'â€”'}, ${parcel.country || 'â€”'}</div>
+        <div class="info-item"><strong>Address</strong> ${parcel.address || 'â€”'}</div>
+        <div class="info-item"><strong>Delivery Fee</strong> $${parcel.charges || 'â€”'}</div>
         <div class="info-item"><strong>Estimated Delivery</strong> ${deliveryDate.toLocaleString([], {dateStyle:'medium', timeStyle:'short'})}</div>
       </div>
 
@@ -376,4 +376,5 @@ function trackParcel() {
 </script>
 
 </body>
+
 </html>
