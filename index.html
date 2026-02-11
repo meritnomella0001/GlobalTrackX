@@ -1,381 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Track Parcel • Customer Dashboard</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    :root {
-      --primary: #0d9488;     /* teal */
-      --primary-dark: #0f766e;
-      --success: #10b981;
-      --gray: #6b7280;
-      --light: #f3f4f6;
-      --bg: #f8fafc;
-    }
-
-    * { box-sizing: border-box; margin:0; padding:0; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: #1f2937;
-      line-height: 1.6;
-      min-height: 100vh;
-      padding: 1.5rem;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-      overflow: hidden;
-    }
-
-    header {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      padding: 2.5rem 2rem;
-      text-align: center;
-    }
-
-    h1 {
-      font-size: 2.1rem;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-    }
-
-    .subtitle {
-      opacity: 0.9;
-      font-size: 1.05rem;
-    }
-
-    .input-section {
-      padding: 2rem;
-      background: var(--light);
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .input-group {
-      display: flex;
-      gap: 12px;
-      max-width: 500px;
-      margin: 0 auto;
-    }
-
-    input {
-      flex: 1;
-      padding: 14px 16px;
-      border: 2px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 1.05rem;
-      transition: border-color 0.2s;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(13,148,136,0.15);
-    }
-
-    button {
-      padding: 0 1.8rem;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-size: 1.05rem;
-    }
-
-    button:hover { background: var(--primary-dark); transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
-
-    #result {
-      padding: 2rem;
-    }
-
-    .card {
-      background: white;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      padding: 1.8rem;
-      animation: fadeIn 0.4s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.4rem;
-      margin: 1.5rem 0;
-    }
-
-    .info-item strong {
-      display: block;
-      color: var(--gray);
-      font-size: 0.9rem;
-      margin-bottom: 0.3rem;
-    }
-
-    .product-image {
-      max-width: 140px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      margin: 1rem 0;
-    }
-
-    .countdown {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin: 1.2rem 0;
-      text-align: center;
-      background: rgba(13,148,136,0.08);
-      padding: 1rem;
-      border-radius: 12px;
-    }
-
-    /* Timeline */
-    .timeline {
-      margin: 2rem 0;
-    }
-
-    .step {
-      position: relative;
-      padding-left: 2.5rem;
-      margin-bottom: 1.6rem;
-      color: var(--gray);
-    }
-
-    .step:last-child { margin-bottom: 0; }
-
-    .step::before,
-    .step::after {
-      content: '';
-      position: absolute;
-      left: 0.9rem;
-      width: 2px;
-      background: #d1d5db;
-    }
-
-    .step::before {
-      top: 0;
-      bottom: -1.8rem;
-    }
-
-    .step:last-child::before { display: none; }
-
-    .step .circle {
-      position: absolute;
-      left: 0;
-      top: 4px;
-      width: 1.6rem;
-      height: 1.6rem;
-      border-radius: 50%;
-      background: white;
-      border: 3px solid #d1d5db;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 0.9rem;
-    }
-
-    .step.active {
-      color: #111827;
-      font-weight: 600;
-    }
-
-    .step.active .circle {
-      background: var(--success);
-      border-color: var(--success);
-    }
-
-    .step.active::before,
-    .step.active + .step::before {
-      background: var(--success);
-    }
-
-    #map {
-      height: 380px;
-      border-radius: 12px;
-      margin-top: 1.5rem;
-      border: 1px solid #e5e7eb;
-    }
-
-    .error {
-      color: #dc2626;
-      text-align: center;
-      font-weight: 500;
-      margin: 1rem 0;
-    }
-
-    @media (max-width: 640px) {
-      .input-group { flex-direction: column; }
-      button { padding: 14px; }
-      h1 { font-size: 1.8rem; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client • Track Parcel</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f0f4f8;padding:16px;}
+.container{max-width:800px;margin:auto;background:white;padding:20px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+h2{text-align:center;color:#0f766e;margin-bottom:20px;}
+.input-group{margin-bottom:12px;}
+input{width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;}
+button{padding:10px;background:#0f766e;color:white;border:none;border-radius:8px;cursor:pointer;margin-top:8px;}
+button:hover{background:#0c5f59;}
+.card{border:1px solid #cbd5e1;border-radius:8px;padding:16px;margin-top:12px;animation:fadeIn 0.5s;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.status{font-weight:bold;margin:10px 0;}
+.timeline{margin-top:16px;}
+.step{padding:10px;border-left:4px solid #cbd5e1;margin-bottom:8px;position:relative;}
+.step.active{border-left-color:#10b981;background:#dcfce7;}
+.step::before{content:'';position:absolute;left:-7px;top:10px;width:12px;height:12px;border-radius:50%;background:#cbd5e1;}
+.step.active::before{background:#10b981;}
+#map{height:250px;border-radius:8px;margin-top:8px;}
+.countdown{font-weight:bold;margin:8px 0;color:#0f766e;}
+img.product-image{max-width:120px;margin-top:8px;border-radius:8px;}
+</style>
 </head>
 <body>
 
 <div class="container">
-  <header>
-    <h1> Track Your Parcel</h1>
-    <p class="subtitle">GlobaltrackX Real-time updates • Secure & Reliable Delivery</p>
-  </header>
+<h2>📦 Track Your Parcel</h2>
 
-  <section class="input-section">
-    <div class="input-group">
-      <input id="trackingCode" placeholder="Enter your tracking number (e.g. EXP123456789)" aria-label="Tracking code"/>
-      <button onclick="trackParcel()">Track Now</button>
-    </div>
-  </section>
+<div class="input-group">
+<input id="trackingCode" placeholder="Enter Tracking Code">
+</div>
+<button onclick="trackParcel()">Track Parcel</button>
 
-  <div id="result"></div>
-  <div id="map"></div>
+<div id="result"></div>
+<div id="map"></div>
 </div>
 
 <script>
-// Initialize map once
-const map = L.map('map', {
-  zoomControl: true,
-  attributionControl: true
-}).setView([9.0, 8.0], 3); // Reasonable default for Nigeria/Africa focus
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+// Leaflet Map
+let map = L.map('map').setView([37.0902, -95.7129], 4); // USA
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19, attribution:'© OpenStreetMap'
 }).addTo(map);
+let marker;
 
-let currentMarker = null;
-
-function trackParcel() {
+// Track Parcel
+function trackParcel(){
   const code = document.getElementById("trackingCode").value.trim();
   const result = document.getElementById("result");
+  marker && map.removeLayer(marker);
 
-  // Clear previous
-  result.innerHTML = '';
-  if (currentMarker) {
-    map.removeLayer(currentMarker);
-    currentMarker = null;
-  }
-
-  if (!code) {
-    result.innerHTML = '<p class="error">Please enter a tracking code.</p>';
+  if(!code){
+    result.innerHTML='<p style="color:red;">Enter a tracking code!</p>';
     return;
   }
 
-  const parcels = JSON.parse(localStorage.getItem("enterprise_parcels") || "[]");
-  const parcel = parcels.find(p => p.code === code);
+  const parcels = JSON.parse(localStorage.getItem("enterprise_parcels")) || [];
+  const parcel = parcels.find(p=>p.code===code);
 
-  if (!parcel) {
-    result.innerHTML = '<p class="error">Tracking code not found. Please check and try again.</p>';
+  if(!parcel){
+    result.innerHTML='<p style="color:red;">Tracking code not found!</p>';
     return;
   }
 
-  // Update map
-  if (parcel.lat && parcel.lng) {
-    currentMarker = L.marker([parcel.lat, parcel.lng], {
-      icon: L.divIcon({
-        className: 'custom-marker',
-        html: '<i class="fas fa-map-pin fa-2x" style="color:#10b981;"></i>',
-        iconSize: [40, 40],
-        iconAnchor: [20, 40]
-      })
-    }).addTo(map)
-      .bindPopup(`<b>Current Location</b><br>${parcel.city || 'Unknown'}, ${parcel.country || ''}`);
-
-    map.setView([parcel.lat, parcel.lng], 12, { animate: true });
-  } else {
-    map.setView([9.0, 8.0], 4); // fallback
+  // Map marker
+  if(parcel.lat && parcel.lng){
+    marker = L.marker([parcel.lat, parcel.lng]).addTo(map);
+    map.setView([parcel.lat, parcel.lng],12);
   }
 
-  // Format delivery date
-  const deliveryDate = new Date(parcel.deliveryTime);
-  const isDelivered = parcel.status === 'Delivered';
-
-  // Countdown logic
-  let countdownHTML = '';
-  if (!isDelivered) {
-    countdownHTML = `<div class="countdown" id="countdown">Calculating ETA...</div>`;
-  } else {
-    countdownHTML = `<div class="countdown" style="color:var(--success);">Delivered </div>`;
+  // Countdown
+  let deliveryDate = new Date(parcel.deliveryTime);
+  clearInterval(window.countdownInterval);
+  function updateCountdown(){
+    const now = new Date();
+    let diff = deliveryDate - now;
+    if(diff<0){diff=0;}
+    const days=Math.floor(diff/1000/60/60/24);
+    const hours=Math.floor((diff/1000/60/60)%24);
+    const minutes=Math.floor((diff/1000/60)%60);
+    const seconds=Math.floor((diff/1000)%60);
+    document.getElementById("countdown").innerText=`ETA: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+    if(diff<=0){clearInterval(window.countdownInterval);}
   }
 
-  // Build timeline steps
-  const steps = [
-    { label: 'Order Placed', icon: 'fa-shopping-cart', active: true },
-    { label: 'Pending',      icon: 'fa-clock',       active: parcel.status !== 'Pending' },
-    { label: 'In Transit',   icon: 'fa-truck',       active: ['In Transit','Delivered'].includes(parcel.status) },
-    { label: 'Delivered',    icon: 'fa-check-circle',active: parcel.status === 'Delivered' }
-  ];
-
-  const timelineHTML = steps.map(s => `
-    <div class="step ${s.active ? 'active' : ''}">
-      <div class="circle"><i class="fas ${s.icon}"></i></div>
-      ${s.label}
-    </div>
-  `).join('');
-
-  result.innerHTML = `
+  result.innerHTML=`
     <div class="card">
-      <h2 style="margin-bottom:1rem;color:var(--primary);">Parcel #${code}</h2>
-
-      <div class="info-grid">
-        <div class="info-item"><strong>Product</strong> ${parcel.product || '—'}</div>
-        <div class="info-item"><strong>Sender</strong> ${parcel.sender || '—'}</div>
-        <div class="info-item"><strong>Receiver</strong> ${parcel.receiver || '—'}</div>
-        <div class="info-item"><strong>Destination</strong> ${parcel.city || '—'}, ${parcel.country || '—'}</div>
-        <div class="info-item"><strong>Address</strong> ${parcel.address || '—'}</div>
-        <div class="info-item"><strong>Delivery Fee</strong> $${parcel.charges || '—'}</div>
-        <div class="info-item"><strong>Estimated Delivery</strong> ${deliveryDate.toLocaleString([], {dateStyle:'medium', timeStyle:'short'})}</div>
-      </div>
-
-      \( {parcel.image ? `<img class="product-image" src=" \){parcel.image}" alt="Product image">` : ''}
-
-      ${countdownHTML}
+      <strong>Product:</strong> ${parcel.product}<br>
+      <strong>Sender:</strong> ${parcel.sender}<br>
+      <strong>Receiver:</strong> ${parcel.receiver}<br>
+      <strong>Country:</strong> ${parcel.country}, <strong>City:</strong> ${parcel.city}<br>
+      <strong>Address:</strong> ${parcel.address}<br>
+      <strong>Charges:</strong> $${parcel.charges}<br>
+      <strong>Delivery Date:</strong> ${deliveryDate.toLocaleString()}<br>
+      <img class="product-image" src="${parcel.image?parcel.image:''}" alt="Product"><br>
+      <div class="countdown" id="countdown"></div>
 
       <div class="timeline">
-        ${timelineHTML}
+        <div class="step ${parcel.status!=='Pending'?'active':''}">Pending</div>
+        <div class="step ${parcel.status==='In Transit'||parcel.status==='Delivered'?'active':''}">In Transit</div>
+        <div class="step ${parcel.status==='Delivered'?'active':''}">Delivered</div>
       </div>
     </div>
   `;
-
-  // Start countdown if not delivered
-  if (!isDelivered) {
-    const countdownEl = document.getElementById("countdown");
-    function update() {
-      const diff = deliveryDate - new Date();
-      if (diff <= 0) {
-        countdownEl.innerHTML = "Package should be delivered now!";
-        clearInterval(window.countdownInterval);
-        return;
-      }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      countdownEl.innerHTML = `Estimated arrival in: ${d}d ${h}h ${m}m ${s}s`;
-    }
-    update();
-    window.countdownInterval = setInterval(update, 1000);
-  }
+  updateCountdown();
+  window.countdownInterval = setInterval(updateCountdown,1000);
 }
 </script>
-
 </body>
-
 </html>
-
