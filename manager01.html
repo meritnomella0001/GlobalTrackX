@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin • Enterprise Logistics</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f0f4f8;padding:16px;}
+.container{max-width:900px;margin:auto;background:white;padding:20px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+h2{text-align:center;color:#0f766e;margin-bottom:20px;}
+.form-group{margin-bottom:12px;}
+input, select{width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;margin-top:4px;}
+button{padding:10px;background:#0f766e;color:white;border:none;border-radius:8px;cursor:pointer;margin-top:8px;}
+button:hover{background:#0c5f59;}
+.parcel-card{border:1px solid #cbd5e1;border-radius:8px;padding:12px;margin-bottom:10px;}
+.parcel-header{display:flex;justify-content:space-between;align-items:center;}
+.status-badge{padding:4px 8px;border-radius:12px;color:white;font-weight:bold;}
+.status-Pending{background:#fbbf24;}
+.status-InTransit{background:#3b82f6;}
+.status-Delivered{background:#10b981;}
+.product-image{max-width:100px;margin-top:6px;border-radius:8px;}
+#map{height:200px;margin-top:10px;border-radius:8px;}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Admin • Enterprise Logistics</h2>
+
+<div class="form-group">
+<label>Sender Name</label>
+<input id="sender" placeholder="John Doe">
+</div>
+<div class="form-group">
+<label>Receiver Name</label>
+<input id="receiver" placeholder="Jane Smith">
+</div>
+<div class="form-group">
+<label>Country</label>
+<input id="country" placeholder="USA">
+</div>
+<div class="form-group">
+<label>City</label>
+<input id="city" placeholder="New York">
+</div>
+<div class="form-group">
+<label>Address</label>
+<input id="address" placeholder="123 Main St">
+</div>
+<div class="form-group">
+<label>Product Name</label>
+<input id="product" placeholder="Laptop">
+</div>
+<div class="form-group">
+<label>Delivery Fee ($)</label>
+<input type="number" id="charges" placeholder="100">
+</div>
+<div class="form-group">
+<label>Delivery Date & Time</label>
+<input type="datetime-local" id="deliveryTime">
+</div>
+<div class="form-group">
+<label>Product Image</label>
+<input type="file" id="imageInput" accept="image/*">
+</div>
+<div class="form-group">
+<label>Click on the map to mark delivery location</label>
+<div id="map"></div>
+</div>
+<button onclick="createParcel()">Add Parcel</button>
+
+<h3>Active Parcels</h3>
+<div id="parcelList"></div>
+
+</div>
+
+<script>
+let parcels = JSON.parse(localStorage.getItem("enterprise_parcels"))||[];
+let selectedCoords = null;
+
+// Leaflet map
+const map = L.map('map').setView([40.7128, -74.0060], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'&copy; OpenStreetMap contributors'
+}).addTo(map);
+let marker = null;
+map.on('click', function(e){
+  selectedCoords = e.latlng;
+  if(marker) map.removeLayer(marker);
+  marker = L.marker(selectedCoords).addTo(map);
+});
+
+// Generate unique code
+function generateCode(){
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code="";
+  for(let i=0;i<12;i++){code+=chars[Math.floor(Math.random()*chars.length)];}
+  return code;
+}
+
+// Save to localStorage
+function saveData(){localStorage.setItem("enterprise_parcels",JSON.stringify(parcels));}
+
+// Add parcel
+function createParcel(){
+  const sender=document.getElementById("sender").value.trim();
+  const receiver=document.getElementById("receiver").value.trim();
+  const country=document.getElementById("country").value.trim();
+  const city=document.getElementById("city").value.trim();
+  const address=document.getElementById("address").value.trim();
+  const product=document.getElementById("product").value.trim();
+  const charges=document.getElementById("charges").value.trim();
+  const deliveryTime=document.getElementById("deliveryTime").value;
+  const imageFile=document.getElementById("imageInput").files[0];
+  if(!sender||!receiver||!country||!city||!address||!product||!charges||!deliveryTime||!selectedCoords){
+    alert("Fill all fields and select coordinates"); return;
+  }
+  const reader = new FileReader();
+  reader.onload=function(e){
+    const imgData = e.target.result;
+    const parcel={
+      id: generateCode(),
+      sender,receiver,country,city,address,product,charges,deliveryTime,imgData,
+      coords:selectedCoords,status:"Pending",created:new Date().toLocaleString()
+    };
+    parcels.push(parcel);
+    saveData();
+    displayParcels();
+  }
+  reader.readAsDataURL(imageFile);
+}
+
+// Delete parcel
+function deleteParcel(id){
+  if(confirm("Delete this parcel?")){
+    parcels = parcels.filter(p=>p.id!==id);
+    saveData();
+    displayParcels();
+  }
+}
+
+// Display parcels
+function displayParcels(){
+  const container=document.getElementById("parcelList");
+  container.innerHTML="";
+  if(parcels.length===0){container.innerHTML="<p>No parcels yet</p>"; return;}
+  parcels.forEach(p=>{
+    const div=document.createElement("div");
+    div.className="parcel-card";
+    div.innerHTML=`
+      <div class="parcel-header">
+        <span>${p.product}</span>
+        <span class="status-badge status-${p.status}">${p.status}</span>
+      </div>
+      <div><strong>Code:</strong> ${p.id}</div>
+      <div><strong>From:</strong> ${p.sender} <strong>To:</strong> ${p.receiver}</div>
+      <div><strong>Address:</strong> ${p.address}, ${p.city}, ${p.country}</div>
+      <div><strong>Delivery Fee:</strong> $${p.charges}</div>
+      <div><strong>Delivery Date:</strong> ${new Date(p.deliveryTime).toLocaleString()}</div>
+      <img src="${p.imgData}" class="product-image"><br>
+      <button onclick="deleteParcel('${p.id}')">Delete</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+displayParcels();
+</script>
+</body>
+</html>
